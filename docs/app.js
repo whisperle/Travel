@@ -1,5 +1,84 @@
 window.NORWAY_API_BASE="https://norway-eight-winter-journey.wh1sper.chatgpt.site";
 (() => {
+  // public/plans.js
+  function setupPlans({ mutate: mutate2 }) {
+    let saved = [];
+    const forms = [];
+    function make(container, key, stay = false) {
+      const form = document.createElement("form");
+      form.className = "plan-editor";
+      const fields = stay ? [["address", "\u623F\u6E90\u540D\u79F0\u4E0E\u5730\u5740"], ["checkin", "\u5165\u4F4F\u65E5\u671F\u4E0E\u65F6\u95F4"], ["checkout", "\u9000\u623F\u65E5\u671F\u4E0E\u65F6\u95F4"], ["rooms", "\u623F\u95F4\u4E0E\u4EBA\u5458\u5B89\u6392"], ["notes", "\u5165\u4F4F\u8BF4\u660E\u3001\u505C\u8F66\u4E0E\u5907\u6CE8\uFF08\u4E0D\u8981\u586B\u5199\u5BC6\u7801\uFF09"]] : [["activity", "\u6D3B\u52A8\u9879\u76EE\uFF08\u53EF\u9010\u884C\u586B\u5199\u591A\u4E2A\u9879\u76EE\uFF09"], ["ticket", "\u8D2D\u7968\u72B6\u6001"], ["transport", "\u4EA4\u901A\u65B9\u5F0F\u3001\u96C6\u5408\u5730\u70B9\u4E0E\u65F6\u95F4"], ["weather", "\u5929\u6C14\u60C5\u51B5\u3001\u9884\u62A5\u65E5\u671F\u4E0E\u6765\u6E90"], ["clothes", "\u7A7F\u7740\u5EFA\u8BAE"], ["notes", "\u6D3B\u52A8\u65F6\u95F4\u3001\u9884\u8BA2\u94FE\u63A5\u4E0E\u5176\u4ED6\u5907\u6CE8"]];
+      const inputs = {};
+      for (const [name, title] of fields) {
+        const label = document.createElement("label");
+        label.textContent = title;
+        let input;
+        if (name === "ticket") {
+          input = document.createElement("select");
+          for (const t of ["\u5F85\u786E\u8BA4", "\u672A\u8D2D\u7968", "\u5DF2\u8D2D\u7968", "\u65E0\u9700\u8D2D\u7968"]) input.add(new Option(t, t));
+        } else {
+          input = document.createElement("textarea");
+          input.rows = name === "activity" || name === "notes" ? 3 : 2;
+          input.maxLength = 500;
+        }
+        input.name = name;
+        input.setAttribute("aria-label", title);
+        label.append(input);
+        form.append(label);
+        inputs[name] = input;
+      }
+      let version = 0, dirty = false;
+      form.addEventListener("input", () => dirty = true);
+      form.addEventListener("change", () => dirty = true);
+      const status = document.createElement("p");
+      status.className = "note";
+      status.setAttribute("role", "status");
+      const button2 = document.createElement("button");
+      button2.textContent = "\u4FDD\u5B58\u5230\u56E2\u961F\u884C\u7A0B";
+      const hint = document.createElement("p");
+      hint.className = "note";
+      hint.textContent = stay ? "\u623F\u6E90\u786E\u8BA4\u540E\u586B\u5199\u3002\u8FD9\u91CC\u662F\u516C\u5F00\u7F51\u9875\uFF0C\u8BF7\u52FF\u5B58\u653E\u95E8\u7981\u5BC6\u7801\u548C\u4E2A\u4EBA\u8BC1\u4EF6\u3002" : "\u5929\u6C14\u9884\u62A5\u5C1A\u5F85\u66F4\u65B0\uFF1B\u4E34\u8FD1\u51FA\u884C\u65F6\u518D\u6838\u5BF9\u5F53\u5730\u9884\u62A5\u3002\u7A7F\u7740\u680F\u53EF\u586B\u5199\u6D3B\u52A8\u65B9\u5EFA\u8BAE\u53CA\u4E2A\u4EBA\u51C6\u5907\u3002";
+      form.append(hint, button2, status);
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        button2.disabled = true;
+        status.textContent = "\u6B63\u5728\u4FDD\u5B58\u2026";
+        const body = { version };
+        for (const [k, input] of Object.entries(inputs)) body[k] = input.value;
+        try {
+          const ok = await mutate2("plans/" + key, "POST", body);
+          if (ok) {
+            version++;
+            dirty = false;
+            status.textContent = "\u5DF2\u5171\u4EAB\u4FDD\u5B58\uFF0C\u6240\u6709\u4F19\u4F34\u5237\u65B0\u540E\u53EF\u89C1\u3002";
+          } else status.textContent = "\u672A\u4FDD\u5B58\uFF0C\u8BF7\u67E5\u770B\u9875\u9762\u63D0\u793A\uFF1B\u586B\u5199\u5185\u5BB9\u4ECD\u4FDD\u7559\u3002";
+        } finally {
+          button2.disabled = false;
+        }
+      };
+      container.append(form);
+      forms.push({ key, apply(record) {
+        if (dirty) return;
+        version = (record == null ? void 0 : record.version) || 0;
+        for (const [k, input] of Object.entries(inputs)) input.value = (record == null ? void 0 : record[k]) || (key === "day-03" && k === "activity" ? "\u6D77\u9493\uFF08\u8BA1\u5212\u4E2D\uFF09" : k === "ticket" ? "\u5F85\u786E\u8BA4" : "");
+      } });
+    }
+    document.querySelectorAll("#day-list>details").forEach((d, i) => make(d, "day-" + String(i + 1).padStart(2, "0")));
+    const airbnb = document.querySelector("#airbnb-editor");
+    if (airbnb) {
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = "\u586B\u5199 / \u7F16\u8F91 Airbnb \u5165\u4F4F\u4FE1\u606F";
+      details.append(summary);
+      airbnb.append(details);
+      make(details, "airbnb", true);
+    }
+    return { update(rows2) {
+      saved = rows2.filter((r) => r.kind === "plan");
+      for (const f of forms) f.apply(saved.find((r) => r.id === "plan-" + f.key));
+    } };
+  }
+
   // public/compat.js
   var runtime = typeof globalThis !== "undefined" ? globalThis : window;
   if (!String.prototype.replaceAll) {
@@ -385,8 +464,10 @@ window.NORWAY_API_BASE="https://norway-eight-winter-journey.wh1sper.chatgpt.site
     if (!foods.length) $2("#foods").append(el2("div", "\u8FD8\u6CA1\u6709\u98DF\u6750\u3002\u628A\u60F3\u5E26\u7684\u4E1C\u897F\u52A0\u8FDB\u6765\uFF0C\u518D\u7531\u5927\u5BB6\u8BA4\u9886\u3002", "empty"));
     $2("#food-progress").textContent = foods.filter((r) => r.completed).length + " / " + foods.length + " \u5DF2\u5E26\u597D";
     money.render(expenses, actor, remove);
+    plans.update(rows);
   }
   var money = makeMoney({ request, getExpenses: () => rows.filter((r) => r.kind === "expense"), getActor: () => actor, remove });
+  var plans = setupPlans({ mutate });
   $2("#add-form").onsubmit = async (e) => {
     e.preventDefault();
     const text = $2("#new-task").value.trim();
@@ -417,3 +498,4 @@ window.NORWAY_API_BASE="https://norway-eight-winter-journey.wh1sper.chatgpt.site
     if (!document.hidden) load();
   });
 })();
+
