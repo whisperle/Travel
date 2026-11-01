@@ -1,0 +1,1 @@
+CREATE TABLE fx_cache (date TEXT PRIMARY KEY NOT NULL, data TEXT NOT NULL, fetched_at INTEGER NOT NULL);

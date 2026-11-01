@@ -1,0 +1,11 @@
+{
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs",
+    "build:pages": "node scripts/build-pages.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.11"
+  }
+}

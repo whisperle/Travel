@@ -1,0 +1,8 @@
+node_modules/
+dist/
+worker/index.js
+.env*
+.dev.vars*
+.wrangler/
+.openai/*.local.*
+*.tar.gz

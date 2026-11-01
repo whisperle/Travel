@@ -1,0 +1,5 @@
+import fs from 'node:fs';import path from 'node:path';import {build} from 'esbuild';
+const output=path.resolve('docs');fs.mkdirSync(output,{recursive:true});fs.cpSync('public',output,{recursive:true});const backend='https://norway-eight-winter-journey.wh1sper.chatgpt.site';
+function relative(url){if(url==='/')return './';if(url.startsWith('/#'))return './'+url.slice(1);if(url==='/countdown'||url==='/countdown/')return './countdown.html';if(url.startsWith('/'))return './'+url.slice(1);return url}
+for(const name of ['index.html','countdown.html']){let h=fs.readFileSync('public/'+name,'utf8');h=h.replace(/(href|src)="([^"]+)"/g,(_,attr,url)=>attr+'="'+relative(url)+'"').replace(/type="module" /g,'defer ');fs.writeFileSync(path.join(output,name),h)}
+await build({entryPoints:['public/app.js','public/countdown.js'],bundle:true,format:'iife',target:['es2018'],outdir:output,minify:false,banner:{js:'window.NORWAY_API_BASE='+JSON.stringify(backend)+';'}});fs.writeFileSync(path.join(output,'.nojekyll'),'');console.log('Built GitHub Pages into docs/ with existing shared backend');
