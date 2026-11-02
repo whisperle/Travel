@@ -204,6 +204,25 @@ window.NORWAY_API_BASE="https://norway-eight-winter-journey.wh1sper.chatgpt.site
         if (!r.ok) throw Error("weather");
         data = await r.json();
         if (!Array.isArray(data.points)) throw Error("format");
+        if (!data.points.length) {
+          const direct = new URL("https://api.open-meteo.com/v1/forecast");
+          direct.search = new URLSearchParams({ latitude: SKY_POINTS.map((p) => p.lat).join(","), longitude: SKY_POINTS.map((p) => p.lon).join(","), current: "temperature_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m", hourly: "apparent_temperature,precipitation,cloud_cover,wind_speed_10m", daily: "temperature_2m_max,temperature_2m_min,apparent_temperature_min,precipitation_probability_max,wind_speed_10m_max,weather_code", forecast_days: "16", timezone: "Europe/Oslo", wind_speed_unit: "ms", timeformat: "unixtime" });
+          const fallbackControl = new AbortController(), fallbackTimer = setTimeout(() => fallbackControl.abort(), 12e3);
+          try {
+            const fallback = await fetch(direct, { signal: fallbackControl.signal });
+            if (fallback.ok) {
+              const raw = await fallback.json();
+              if (Array.isArray(raw) && raw.length === SKY_POINTS.length) {
+                data.points = SKY_POINTS.map((p, i) => ({ ...p, current: raw[i].current, daily: raw[i].daily, hourly: raw[i].hourly }));
+                data.fetchedAt = (/* @__PURE__ */ new Date()).toISOString();
+                data.errors = data.errors.filter((e) => !e.startsWith("\u5929\u6C14"));
+              }
+            }
+          } catch (e) {
+          } finally {
+            clearTimeout(fallbackTimer);
+          }
+        }
         render2();
       } catch (e) {
         status.textContent = "\u5929\u6C14\uFF0F\u6781\u5149\u8FDE\u63A5\u6682\u65F6\u5931\u8D25\u3002" + (data ? "\u4E0B\u65B9\u4FDD\u7559\u7684\u662F\u4E0A\u6B21\u83B7\u53D6\u5185\u5BB9\uFF0C\u8BF7\u6838\u5BF9\u5176\u65F6\u95F4\uFF0C\u4E0D\u80FD\u5F53\u4F5C\u5F53\u524D\u60C5\u51B5\u3002" : "\u8BF7\u70B9\u51FB\u5237\u65B0\u91CD\u8BD5\u3002");
