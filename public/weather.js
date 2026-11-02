@@ -1,7 +1,7 @@
 import {SKY_POINTS,skyDate,clothing,bestSkyWindow,auroraState} from './weather-logic.js';
 const skyFmt=(v,suffix='')=>Number.isFinite(v)?Math.round(v*10)/10+suffix:'暂无数据';
 const skyTime=s=>new Date(s*1000).toLocaleString('zh-CN',{timeZone:'Europe/Oslo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
-const skyCode=c=>!Number.isFinite(c)?'天气状态待更新':c===0?'晴':c<=3?'晴间多云':c===45||c===48?'雾':c>=71&&c<=77||c===85||c===86?'降雪':c>=95?'雷暴':c>=51&&c<=67||c>=80&&c<=82?'降雨':'天气状态待更新';
+const skyCode=c=>!Number.isFinite(c)?'天气状态待更新':c===0?'晴':c===1?'大部晴朗':c===2?'局部多云':c===3?'阴':c===45||c===48?'雾':c>=71&&c<=77||c===85||c===86?'降雪':c>=95?'雷暴':c>=51&&c<=67||c>=80&&c<=82?'降雨':'天气状态待更新';
 function skyEl(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
 function skyLocationSelect(value){const s=document.createElement('select');for(const p of SKY_POINTS)s.add(new Option(p.name,p.id));s.value=value;return s}
 export function setupWeather(){const host=document.querySelector('#live-sky');if(!host)return;let data=null,loading=false;const nowDate=skyDate(Date.now()/1000),initial=nowDate>='2027-01-06'&&nowDate<='2027-01-08'?'reine':nowDate>='2027-01-04'&&nowDate<'2027-01-06'?'svolvaer':nowDate==='2027-01-09'?'eve':'tromso';

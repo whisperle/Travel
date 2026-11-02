@@ -62,7 +62,7 @@ window.NORWAY_API_BASE="https://norway-eight-winter-journey.wh1sper.chatgpt.site
   // public/weather.js
   var skyFmt = (v, suffix = "") => Number.isFinite(v) ? Math.round(v * 10) / 10 + suffix : "\u6682\u65E0\u6570\u636E";
   var skyTime = (s) => new Date(s * 1e3).toLocaleString("zh-CN", { timeZone: "Europe/Oslo", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-  var skyCode = (c) => !Number.isFinite(c) ? "\u5929\u6C14\u72B6\u6001\u5F85\u66F4\u65B0" : c === 0 ? "\u6674" : c <= 3 ? "\u6674\u95F4\u591A\u4E91" : c === 45 || c === 48 ? "\u96FE" : c >= 71 && c <= 77 || c === 85 || c === 86 ? "\u964D\u96EA" : c >= 95 ? "\u96F7\u66B4" : c >= 51 && c <= 67 || c >= 80 && c <= 82 ? "\u964D\u96E8" : "\u5929\u6C14\u72B6\u6001\u5F85\u66F4\u65B0";
+  var skyCode = (c) => !Number.isFinite(c) ? "\u5929\u6C14\u72B6\u6001\u5F85\u66F4\u65B0" : c === 0 ? "\u6674" : c === 1 ? "\u5927\u90E8\u6674\u6717" : c === 2 ? "\u5C40\u90E8\u591A\u4E91" : c === 3 ? "\u9634" : c === 45 || c === 48 ? "\u96FE" : c >= 71 && c <= 77 || c === 85 || c === 86 ? "\u964D\u96EA" : c >= 95 ? "\u96F7\u66B4" : c >= 51 && c <= 67 || c >= 80 && c <= 82 ? "\u964D\u96E8" : "\u5929\u6C14\u72B6\u6001\u5F85\u66F4\u65B0";
   function skyEl(tag, text, cls) {
     const n = document.createElement(tag);
     if (text !== void 0) n.textContent = text;
