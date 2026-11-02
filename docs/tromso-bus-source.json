@@ -1,0 +1,368 @@
+{
+  "checkedAt": "2026-11-02",
+  "timezone": "Europe/Oslo",
+  "source": "https://api.entur.io/journey-planner/v3/graphql",
+  "query": "{jan1:stopPlace(id:\"NSR:StopPlace:54464\"){estimatedCalls(startTime:\"2027-01-01T15:00:00+01:00\",timeRange:7200,numberOfDepartures:50){aimedDepartureTime destinationDisplay{frontText} serviceJourney{line{publicCode}}}} jan2:stopPlace(id:\"NSR:StopPlace:54464\"){estimatedCalls(startTime:\"2027-01-02T09:00:00+01:00\",timeRange:7200,numberOfDepartures:50){aimedDepartureTime destinationDisplay{frontText} serviceJourney{line{publicCode}}}}}",
+  "data": {
+    "jan1": {
+      "estimatedCalls": [
+        {
+          "aimedDepartureTime": "2027-01-01T15:05:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Skjelnan via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T15:06:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Tromsø lufthavn via Mortensnes"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T15:22:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Kroken via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T15:29:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Stakkevollan via UNN"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T15:35:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Skjelnan via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T15:36:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Tromsø lufthavn via Mortensnes"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T15:52:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Kroken via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T15:59:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Stakkevollan via UNN"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T16:05:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Skjelnan via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T16:06:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Tromsø lufthavn via Mortensnes"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T16:22:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Kroken via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T16:29:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Stakkevollan via UNN"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T16:35:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Skjelnan via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T16:36:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Tromsø lufthavn via Mortensnes"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T16:52:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Kroken via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-01T16:59:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Stakkevollan via UNN"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        }
+      ]
+    },
+    "jan2": {
+      "estimatedCalls": [
+        {
+          "aimedDepartureTime": "2027-01-02T09:05:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Skjelnan via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T09:06:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Tromsø lufthavn via Mortensnes"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T09:22:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Kroken via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T09:29:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Stakkevollan via UNN"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T09:35:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Skjelnan via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T09:36:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Tromsø lufthavn via Mortensnes"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T09:52:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Kroken via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T09:59:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Stakkevollan via UNN"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T10:05:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Skjelnan via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T10:06:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Tromsø lufthavn via Mortensnes"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T10:22:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Kroken via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T10:30:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Stakkevollan via UNN"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T10:35:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Skjelnan via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T10:36:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Tromsø lufthavn via Mortensnes"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "24"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T10:53:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Kroken via sentrum"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        },
+        {
+          "aimedDepartureTime": "2027-01-02T11:00:00+01:00",
+          "destinationDisplay": {
+            "frontText": "Stakkevollan via UNN"
+          },
+          "serviceJourney": {
+            "line": {
+              "publicCode": "20"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
