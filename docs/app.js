@@ -1,5 +1,230 @@
 window.NORWAY_API_BASE="https://norway-eight-winter-journey.wh1sper.chatgpt.site";
 (() => {
+  // public/weather-logic.js
+  var SKY_POINTS = [
+    { id: "tromso", name: "\u7279\u7F57\u59C6\u745F\u5E02\u533A", group: "tromso", lat: 69.6492, lon: 18.9553 },
+    { id: "ersfjord", name: "Ersfjordbotn \u533A\u57DF", group: "tromso", lat: 69.695, lon: 18.631 },
+    { id: "sommaroy", name: "Sommar\xF8y \u533A\u57DF", group: "tromso", lat: 69.633, lon: 17.996 },
+    { id: "eve", name: "EVE \u673A\u573A\u533A\u57DF", group: "eve", lat: 68.491, lon: 16.678 },
+    { id: "svolvaer", name: "Svolv\xE6r\uFF0FV\xE5gan", group: "lofoten", lat: 68.234, lon: 14.568 },
+    { id: "gimsoy", name: "Gims\xF8y \u533A\u57DF", group: "lofoten", lat: 68.326, lon: 14.089 },
+    { id: "haukland", name: "Haukland \u533A\u57DF", group: "lofoten", lat: 68.199, lon: 13.528 },
+    { id: "reine", name: "\u96F7\u8BB7\uFF0F\xC5 \u5468\u8FB9", group: "lofoten", lat: 67.932, lon: 13.089 }
+  ];
+  var skyDateFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Oslo", year: "numeric", month: "2-digit", day: "2-digit" });
+  function skyDate(seconds) {
+    return skyDateFormatter.format(new Date(seconds * 1e3));
+  }
+  var skyHourFormatter = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Oslo", hour: "2-digit", hourCycle: "h23" });
+  function skyHour(seconds) {
+    return Number(skyHourFormatter.format(new Date(seconds * 1e3)));
+  }
+  function solarAltitude(seconds, lat, lon) {
+    const r = Math.PI / 180, d = seconds / 86400 + 24405875e-1 - 2451545, g = (357.529 + 0.98560028 * d) * r, L = (280.459 + 0.98564736 * d) * r, lambda = L + (1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) * r, eps = (23.439 - 36e-8 * d) * r, ra = Math.atan2(Math.cos(eps) * Math.sin(lambda), Math.cos(lambda)), dec = Math.asin(Math.sin(eps) * Math.sin(lambda)), ha = (280.16 + 360.9856235 * d + lon) * r - ra;
+    return Math.asin(Math.sin(lat * r) * Math.sin(dec) + Math.cos(lat * r) * Math.cos(dec) * Math.cos(ha)) / r;
+  }
+  function clothing(feels, wind = 0, rain = 0, waiting = false) {
+    if (!Number.isFinite(feels)) return "\u6682\u65E0\u6709\u6548\u4F53\u611F\u6E29\u5EA6\uFF0C\u65E0\u6CD5\u751F\u6210\u7A7F\u642D\u5EFA\u8BAE\u3002";
+    let s = feels <= -10 ? "\u539A\u4FDD\u6696\u5185\u5C42\uFF0B\u6293\u7ED2\uFF0F\u7F8A\u6BDB\u4E2D\u5C42\uFF0B\u539A\u7FBD\u7ED2\u5916\u5957" : feels <= 0 ? "\u4FDD\u6696\u5185\u5C42\uFF0B\u6293\u7ED2\u4E2D\u5C42\uFF0B\u4FDD\u6696\u5916\u5957" : feels <= 10 ? "\u957F\u8896\u5185\u5C42\uFF0B\u6293\u7ED2\uFF0F\u8584\u7FBD\u7ED2\uFF0C\u53EF\u589E\u51CF\u5206\u5C42" : "\u957F\u8896\u4E0E\u53EF\u8131\u5378\u5916\u5957";
+    s += "\uFF1B\u4FDD\u6696\u5E3D\u3001\u624B\u5957\u3001\u7F8A\u6BDB\u889C\u548C\u9632\u6ED1\u9632\u6C34\u978B\u3002";
+    if (wind >= 8) s += " \u98CE\u8F83\u5927\uFF0C\u5916\u5C42\u9009\u9632\u98CE\u6B3E\uFF0C\u62A4\u4F4F\u8033\u6735\u548C\u9888\u90E8\u3002";
+    if (rain > 0) s += " \u6709\u964D\u6C34\uFF0C\u589E\u52A0\u9632\u6C34\u5916\u5C42\uFF0C\u51C6\u5907\u5907\u7528\u5E72\u889C\u3002";
+    if (waiting) s += " \u591C\u95F4\u4E45\u7AD9\u89C2\u6D4B\u518D\u52A0\u4E00\u5C42\u4FDD\u6696\uFF0C\u5E26\u70ED\u996E\uFF0C\u5B89\u6392\u56DE\u8F66\u5185\u53D6\u6696\u3002";
+    return s + "\u4EC5\u4F5C\u4E00\u822C\u51C6\u5907\u53C2\u8003\uFF0C\u6D77\u9493\u7B49\u6D3B\u52A8\u4EE5\u8FD0\u8425\u65B9\u88C5\u5907\u8981\u6C42\u4E3A\u51C6\u3002";
+  }
+  function bestSkyWindow(point, nowSeconds) {
+    const h = point.hourly;
+    if (!(h == null ? void 0 : h.time)) return null;
+    const date = skyDate(nowSeconds), hour = skyHour(nowSeconds), tomorrow = skyDate(Date.parse(date + "T12:00:00Z") / 1e3 + 86400);
+    const candidates = h.time.map((t, i) => {
+      var _a, _b, _c, _d;
+      return { time: t, cloud: (_a = h.cloud_cover) == null ? void 0 : _a[i], wind: (_b = h.wind_speed_10m) == null ? void 0 : _b[i], rain: (_c = h.precipitation) == null ? void 0 : _c[i], feels: (_d = h.apparent_temperature) == null ? void 0 : _d[i] };
+    }).filter((x) => {
+      if (x.time < nowSeconds || x.time > nowSeconds + 86400) return false;
+      const day = skyDate(x.time), hr = skyHour(x.time), tonight = hour < 6 ? day === date && hr < 6 : day === date && hr >= 18 || day === tomorrow && hr < 6;
+      return x.time >= nowSeconds && tonight && solarAltitude(x.time, point.lat, point.lon) < -6 && Number.isFinite(x.cloud) && Number.isFinite(x.rain) && Number.isFinite(x.wind);
+    });
+    candidates.sort((a, b) => a.cloud + a.rain * 30 - (b.cloud + b.rain * 30) || a.time - b.time);
+    return candidates[0] || null;
+  }
+  function auroraState(point, aurora, nowSeconds) {
+    var _a;
+    const current = point.current, valid = Number.isFinite((_a = aurora == null ? void 0 : aurora.values) == null ? void 0 : _a[point.id]) && Number.isFinite(Date.parse(aurora.observationTime)) && Number.isFinite(Date.parse(aurora.forecastTime)) && Math.abs(nowSeconds - Date.parse(aurora.observationTime) / 1e3) < 7200 && Math.abs(nowSeconds - Date.parse(aurora.forecastTime) / 1e3) < 7200;
+    const weatherFresh = current && Number.isFinite(current.time) && Math.abs(nowSeconds - current.time) < 7200;
+    if (!valid || !weatherFresh) return "\u6570\u636E\u4E0D\u8DB3\u6216\u5DF2\u8FC7\u671F\uFF0C\u6682\u4E0D\u5224\u65AD";
+    if (solarAltitude(nowSeconds, point.lat, point.lon) >= -6) return "\u73B0\u5728\u5929\u8272\u4ECD\u4EAE\uFF0C\u7B49\u5F85\u66F4\u6697\u65F6\u6BB5";
+    if (!Number.isFinite(current.cloud_cover) || !Number.isFinite(current.precipitation)) return "\u4E91\u91CF\uFF0F\u964D\u6C34\u6570\u636E\u4E0D\u8DB3";
+    if (current.cloud_cover > 60 || current.precipitation > 0.2) return "\u76EE\u524D\u4E91\uFF0F\u964D\u6C34\u906E\u6321\u8F83\u591A";
+    if (aurora.values[point.id] >= 10) return "\u73B0\u5728\u53EF\u7559\u610F\u5929\u7A7A\uFF08\u4ECD\u4E0D\u4FDD\u8BC1\u53EF\u89C1\uFF09";
+    return "\u5F53\u524D\u6A21\u578B\u4FE1\u53F7\u504F\u4F4E\uFF0C\u7EE7\u7EED\u89C2\u5BDF";
+  }
+
+  // public/weather.js
+  var skyFmt = (v, suffix = "") => Number.isFinite(v) ? Math.round(v * 10) / 10 + suffix : "\u6682\u65E0\u6570\u636E";
+  var skyTime = (s) => new Date(s * 1e3).toLocaleString("zh-CN", { timeZone: "Europe/Oslo", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  var skyCode = (c) => !Number.isFinite(c) ? "\u5929\u6C14\u72B6\u6001\u5F85\u66F4\u65B0" : c === 0 ? "\u6674" : c <= 3 ? "\u6674\u95F4\u591A\u4E91" : c === 45 || c === 48 ? "\u96FE" : c >= 71 && c <= 77 || c === 85 || c === 86 ? "\u964D\u96EA" : c >= 95 ? "\u96F7\u66B4" : c >= 51 && c <= 67 || c >= 80 && c <= 82 ? "\u964D\u96E8" : "\u5929\u6C14\u72B6\u6001\u5F85\u66F4\u65B0";
+  function skyEl(tag, text, cls) {
+    const n = document.createElement(tag);
+    if (text !== void 0) n.textContent = text;
+    if (cls) n.className = cls;
+    return n;
+  }
+  function skyLocationSelect(value) {
+    const s = document.createElement("select");
+    for (const p of SKY_POINTS) s.add(new Option(p.name, p.id));
+    s.value = value;
+    return s;
+  }
+  function setupWeather() {
+    const host = document.querySelector("#live-sky");
+    if (!host) return;
+    let data = null, loading = false;
+    const nowDate = skyDate(Date.now() / 1e3), initial = nowDate >= "2027-01-06" && nowDate <= "2027-01-08" ? "reine" : nowDate >= "2027-01-04" && nowDate < "2027-01-06" ? "svolvaer" : nowDate === "2027-01-09" ? "eve" : "tromso";
+    const title = skyEl("div", void 0, "sky-head");
+    const heading = skyEl("div");
+    heading.append(skyEl("p", "LIVE / WEATHER & AURORA", "eyebrow"), skyEl("h3", "\u770B\u5929\u6C14\uFF0C\u4E5F\u7B49\u4E00\u573A\u6781\u5149"));
+    const refresh = skyEl("button", "\u5237\u65B0\u5929\u6C14\u4E0E\u6781\u5149 \u21BB");
+    refresh.type = "button";
+    title.append(heading, refresh);
+    host.append(title);
+    const choice = skyEl("label", "\u5F53\u524D\u5929\u6C14\u5730\u70B9 ");
+    const select = skyLocationSelect(initial);
+    select.setAttribute("aria-label", "\u5F53\u524D\u5929\u6C14\u5730\u70B9");
+    choice.append(select);
+    host.append(choice);
+    const status = skyEl("p", "\u6B63\u5728\u8FDE\u63A5\u5929\u6C14\u4E0E\u6781\u5149\u6570\u636E\u2026", "note");
+    status.setAttribute("role", "status");
+    const current = skyEl("div", void 0, "sky-current");
+    host.append(status, current);
+    const auroraHead = skyEl("div", void 0, "sky-head");
+    auroraHead.append(skyEl("h3", "\u4ECA\u665A\uFF0C\u5148\u770B\u54EA\u7247\u5929\u7A7A\uFF1F"));
+    const groupLabel = skyEl("label", "\u5019\u9009\u533A\u57DF "), group = skyEl("select");
+    group.setAttribute("aria-label", "\u6781\u5149\u5019\u9009\u533A\u57DF");
+    for (const [id, name] of [["tromso", "\u7279\u7F57\u59C6\u745F\u5468\u8FB9"], ["lofoten", "\u7F57\u5F17\u6566\u7FA4\u5C9B"], ["eve", "EVE \u5468\u8FB9"]]) group.add(new Option(name, id));
+    group.value = SKY_POINTS.find((p) => p.id === initial).group;
+    groupLabel.append(group);
+    auroraHead.append(groupLabel);
+    host.append(auroraHead);
+    const alert = skyEl("p", "\u7B49\u5F85\u6570\u636E\u2026", "sky-notice");
+    alert.setAttribute("role", "status");
+    const stamp = skyEl("p", "", "note"), candidates = skyEl("div", void 0, "sky-candidates");
+    host.append(alert, stamp, candidates);
+    const explain = skyEl("p", "\u4F4D\u7F6E\u6392\u5E8F\u53EA\u6BD4\u8F83\u6240\u9009\u533A\u57DF\u4ECA\u665A\u8F83\u5C11\u4E91\u3001\u964D\u6C34\u8F83\u5C11\u7684\u591C\u95F4\u5C0F\u65F6\uFF1BNOAA \u6307\u6807\u53EA\u5BF9\u5E94\u5176\u6807\u6CE8\u7684\u77ED\u65F6\u9884\u6D4B\u65F6\u523B\uFF0C\u4E0D\u7528\u4E8E\u9884\u6D4B\u6574\u665A\uFF0C\u4E5F\u4E0D\u7B49\u4E8E\u4F60\u8089\u773C\u770B\u5230\u6781\u5149\u7684\u6982\u7387\u3002\u9875\u9762\u6253\u5F00\u65F6\u7EA6\u6BCF 10 \u5206\u949F\u5237\u65B0\uFF0C\u4E0D\u4F1A\u5411\u5FAE\u4FE1\u63A8\u9001\u3002", "note");
+    host.append(explain);
+    const safety = skyEl("p", "\u5019\u9009\u4F4D\u7F6E\u662F\u533A\u57DF\u53C2\u8003\uFF0C\u4E0D\u662F\u5DF2\u6838\u5B9E\u53EF\u505C\u8F66\u7684\u89C2\u6D4B\u70B9\u3002\u5148\u67E5\u9053\u8DEF\u3001\u98CE\u96EA\u548C\u505C\u8F66\u6761\u4EF6\uFF0C\u8FDC\u79BB\u6D6A\u8FB9\u3001\u7ED3\u51B0\u5CB8\u7EBF\u53CA\u9053\u8DEF\u5E94\u6025\u8F66\u9053\uFF1B\u4E0D\u4E3A\u4E91\u91CF\u6392\u540D\u8DE8\u533A\u57DF\u8D76\u8DEF\u3002", "note");
+    host.append(safety);
+    const links = skyEl("p");
+    for (const [name, url] of [["\u5929\u6C14\u6765\u6E90\uFF1AOpen-Meteo", "https://open-meteo.com/"], ["\u6781\u5149\u6765\u6E90\uFF1ANOAA OVATION", "https://www.swpc.noaa.gov/products/aurora-30-minute-forecast"], ["\u5B98\u65B9\u9053\u8DEF\u72B6\u6001", "https://www.vegvesen.no/trafikk/"]]) {
+      const a = skyEl("a", name + " \u2197");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      links.append(a, document.createTextNode("\u3000"));
+    }
+    host.append(links);
+    const cards = [];
+    document.querySelectorAll("#day-list>details").forEach((detail, i) => {
+      const box = skyEl("div", void 0, "day-sky"), label = skyEl("label", "\u67E5\u770B\u5929\u6C14\u5730\u70B9 "), s = skyLocationSelect(i < 4 ? "tromso" : i < 6 ? "svolvaer" : i < 8 ? "reine" : "eve"), body = skyEl("div");
+      s.setAttribute("aria-label", "\u7B2C " + (i + 1) + " \u5929\u5929\u6C14\u5730\u70B9");
+      label.append(s);
+      box.append(label, body);
+      detail.querySelector(".daybody").append(box);
+      const c = { select: s, body, date: i === 0 ? "2026-12-31" : "2027-01-" + String(i).padStart(2, "0") };
+      cards.push(c);
+      s.onchange = () => renderDay(c);
+    });
+    function weatherSummary(p) {
+      const c = p.current;
+      if (!c || !Number.isFinite(c.temperature_2m)) return "\u8BE5\u5730\u70B9\u5F53\u524D\u5929\u6C14\u6682\u65E0\u6570\u636E\u3002";
+      return p.name + " \xB7 " + skyCode(c.weather_code) + " \xB7 " + skyFmt(c.temperature_2m, "\xB0C") + "\uFF0C\u4F53\u611F " + skyFmt(c.apparent_temperature, "\xB0C") + " \xB7 \u98CE " + skyFmt(c.wind_speed_10m, " m/s") + " \xB7 \u4E91\u91CF " + skyFmt(c.cloud_cover, "%") + "\uFF08\u5F53\u5730 " + skyTime(c.time) + "\uFF09";
+    }
+    function renderDay(c) {
+      var _a, _b, _c, _d, _e, _f;
+      c.body.replaceChildren();
+      const p = data == null ? void 0 : data.points.find((p2) => p2.id === c.select.value);
+      if (!p) {
+        c.body.append(skyEl("p", "\u5929\u6C14\u6682\u4E0D\u53EF\u7528\uFF0C\u70B9\u51FB\u4E0A\u65B9\u5237\u65B0\u91CD\u8BD5\u3002", "note"));
+        return;
+      }
+      const today = skyDate(Date.now() / 1e3);
+      const index = (_c = (_b = (_a = p.daily) == null ? void 0 : _a.time) == null ? void 0 : _b.findIndex((t) => skyDate(t) === c.date)) != null ? _c : -1;
+      if (index >= 0) {
+        const d = p.daily;
+        c.body.append(skyEl("p", c.date + " \xB7 " + p.name + " \xB7 " + skyCode(d.weather_code[index]) + " \xB7 " + skyFmt(d.temperature_2m_min[index], "\xB0C") + "\uFF5E" + skyFmt(d.temperature_2m_max[index], "\xB0C") + " \xB7 \u6700\u5927\u964D\u6C34\u6982\u7387 " + skyFmt(d.precipitation_probability_max[index], "%") + " \xB7 \u6700\u5927\u98CE\u901F " + skyFmt(d.wind_speed_10m_max[index], " m/s")));
+        c.body.append(skyEl("p", "\u5F53\u5929\u7A7F\u642D\u53C2\u8003\uFF1A" + clothing(d.apparent_temperature_min[index], d.wind_speed_10m_max[index], d.precipitation_probability_max[index] > 30 ? 1 : 0)));
+      } else c.body.append(skyEl("p", c.date < today ? "\u884C\u7A0B\u65E5\u671F\u5DF2\u8FC7\u53BB\uFF0C\u6B64\u5904\u4E0D\u63D0\u4F9B\u5386\u53F2\u5B9E\u51B5\u3002" : "\u884C\u7A0B\u5F53\u5929\u5C1A\u672A\u8FDB\u5165\u6700\u957F 16 \u5929\u7684\u9884\u62A5\u8303\u56F4\uFF0C\u4E34\u8FD1\u540E\u4F1A\u81EA\u52A8\u663E\u793A\u5F53\u5929\u9884\u62A5\u548C\u7A7F\u642D\u5EFA\u8BAE\u3002", "note"));
+      c.body.append(skyEl("p", "\u73B0\u5728\u53C2\u8003\uFF1A" + weatherSummary(p), "note"));
+      if (index < 0) c.body.append(skyEl("p", "\u73B0\u5728\u7A7F\u642D\u53C2\u8003\uFF08\u4E0D\u662F\u884C\u7A0B\u65E5\u9884\u62A5\uFF09\uFF1A" + clothing((_d = p.current) == null ? void 0 : _d.apparent_temperature, (_e = p.current) == null ? void 0 : _e.wind_speed_10m, (_f = p.current) == null ? void 0 : _f.precipitation)));
+      c.body.append(skyEl("p", "\u81EA\u52A8\u5929\u6C14\u6309\u6240\u9009\u57CE\u9547\u4F30\u7B97\uFF1B\u6D77\u9493\u7B49\u9879\u76EE\u9700\u53E6\u770B\u6D77\u51B5\u53CA\u6D3B\u52A8\u65B9\u901A\u77E5\u3002\u4F60\u586B\u5199\u7684\u884C\u7A0B\u4E0E\u7A7F\u7740\u5907\u6CE8\u4F1A\u4FDD\u7559\u3002", "note"));
+    }
+    function render2() {
+      var _a, _b, _c, _d, _e, _f;
+      if (!data) return;
+      const seconds = Date.now() / 1e3, p = data.points.find((p2) => p2.id === select.value);
+      current.replaceChildren();
+      if (p) {
+        current.append(skyEl("strong", weatherSummary(p)), skyEl("p", "\u73B0\u5728\u600E\u4E48\u7A7F\uFF1A" + clothing((_a = p.current) == null ? void 0 : _a.apparent_temperature, (_b = p.current) == null ? void 0 : _b.wind_speed_10m, (_c = p.current) == null ? void 0 : _c.precipitation)));
+        if (Math.abs(seconds - ((_d = p.current) == null ? void 0 : _d.time)) > 7200) current.append(skyEl("p", "\u5F53\u524D\u5929\u6C14\u6570\u636E\u5DF2\u8D85\u8FC7 2 \u5C0F\u65F6\uFF0C\u8BF7\u5237\u65B0\u6838\u5BF9\u3002", "note"));
+      } else current.append(skyEl("p", "\u5929\u6C14\u63A5\u53E3\u6682\u4E0D\u53EF\u7528\uFF0C\u8BF7\u7A0D\u540E\u5237\u65B0\u3002"));
+      status.textContent = "\u9875\u9762\u83B7\u53D6\uFF1A" + new Date(data.fetchedAt).toLocaleString("zh-CN", { timeZone: "Europe/Oslo", hour12: false }) + "\uFF08\u632A\u5A01\u65F6\u95F4\uFF09\u3002\u5F53\u524D\u5929\u6C14\u4E3A\u6A21\u578B\u4F30\u8BA1\uFF0C\u5E76\u975E\u4F4F\u5BBF\u95E8\u53E3\u5B9E\u6D4B\u3002" + data.errors.join(" ");
+      candidates.replaceChildren();
+      const ranked = data.points.filter((p2) => p2.group === group.value).map((p2) => ({ p: p2, w: bestSkyWindow(p2, seconds) })).sort((a, b) => (a.w ? a.w.cloud + a.w.rain * 30 : Infinity) - (b.w ? b.w.cloud + b.w.rain * 30 : Infinity));
+      const best = ranked.find((x) => x.w);
+      alert.textContent = best ? (best.w.cloud <= 40 && best.w.rain <= 0.2 ? "\u4ECA\u665A\u8F83\u5C11\u4E91\u7684\u5019\u9009\uFF1A" : "\u4ECA\u665A\u4E91\uFF0F\u964D\u6C34\u6761\u4EF6\u4ECD\u6709\u9650\uFF0C\u53EF\u5148\u6BD4\u8F83\uFF1A") + best.p.name + " \xB7 " + skyTime(best.w.time) + "\uFF1B\u6B64\u65F6\u6BB5\u5C1A\u4E0D\u80FD\u7531\u5F53\u524D\u6781\u5149\u6A21\u578B\u4FDD\u8BC1\u6709\u6781\u5149\u3002" : "\u4ECA\u665A\u6682\u65E0\u8DB3\u591F\u7684\u591C\u95F4\u5929\u6C14\u6570\u636E\uFF0C\u6682\u4E0D\u63A8\u8350\u4F4D\u7F6E\u3002";
+      stamp.textContent = data.aurora ? "NOAA \u89C2\u6D4B\uFF1A" + data.aurora.observationTime + " \xB7 \u77ED\u65F6\u9884\u6D4B\u6709\u6548\u65F6\u523B\uFF1A" + data.aurora.forecastTime + "\uFF08\u5747\u4E3A UTC\uFF09\uFF1B\u7EA6 30\u201390 \u5206\u949F\u77ED\u65F6\u4EA7\u54C1\uFF0C\u7EA6 1\xB0 \u7F51\u683C\u4E0D\u80FD\u533A\u5206\u76F8\u90BB\u8857\u9053\u3002" : "NOAA \u77ED\u65F6\u6570\u636E\u6682\u65E0\uFF0C\u4EE5\u4E0B\u4EC5\u4F5C\u4E91\u91CF\u53C2\u8003\u3002";
+      for (const { p: p2, w } of ranked) {
+        const card = skyEl("article", void 0, "sky-location");
+        card.append(skyEl("h4", p2.name), skyEl("p", auroraState(p2, data.aurora, seconds)));
+        const val = (_f = (_e = data.aurora) == null ? void 0 : _e.values) == null ? void 0 : _f[p2.id];
+        card.append(skyEl("p", "\u5F53\u524D\u533A\u57DF NOAA \u6A21\u578B\u503C\uFF1A" + skyFmt(val, " / 100") + "\uFF08\u975E\u76EE\u89C6\u6210\u529F\u7387\uFF09", "note"));
+        if (w) {
+          card.append(skyEl("p", "\u4ECA\u665A\u8F83\u5C11\u4E91\u65F6\u6BB5\uFF1A" + skyTime(w.time) + " \xB7 \u4E91\u91CF " + skyFmt(w.cloud, "%") + " \xB7 \u964D\u6C34 " + skyFmt(w.rain, " mm") + " \xB7 \u98CE " + skyFmt(w.wind, " m/s")), skyEl("p", "\u7B49\u6781\u5149\u7A7F\u642D\uFF1A" + clothing(w.feels, w.wind, w.rain, true)));
+        } else card.append(skyEl("p", "\u6682\u65E0\u53EF\u7528\u591C\u95F4\u5C0F\u65F6\uFF0C\u4E0D\u80FD\u5224\u65AD\u4ECA\u665A\u7A97\u53E3\u3002"));
+        const a = skyEl("a", "\u67E5\u770B\u533A\u57DF\u5730\u56FE \u2197");
+        a.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p2.lat + "," + p2.lon);
+        a.target = "_blank";
+        a.rel = "noopener";
+        card.append(a);
+        candidates.append(card);
+      }
+      cards.forEach(renderDay);
+    }
+    async function load2() {
+      if (loading) return;
+      loading = true;
+      refresh.disabled = true;
+      try {
+        const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 2e4);
+        let r;
+        try {
+          r = await fetch((window.NORWAY_API_BASE || "") + "/api/weather", { cache: "no-store", signal: controller.signal });
+        } finally {
+          clearTimeout(timer);
+        }
+        if (!r.ok) throw Error("weather");
+        data = await r.json();
+        if (!Array.isArray(data.points)) throw Error("format");
+        render2();
+      } catch (e) {
+        status.textContent = "\u5929\u6C14\uFF0F\u6781\u5149\u8FDE\u63A5\u6682\u65F6\u5931\u8D25\u3002" + (data ? "\u4E0B\u65B9\u4FDD\u7559\u7684\u662F\u4E0A\u6B21\u83B7\u53D6\u5185\u5BB9\uFF0C\u8BF7\u6838\u5BF9\u5176\u65F6\u95F4\uFF0C\u4E0D\u80FD\u5F53\u4F5C\u5F53\u524D\u60C5\u51B5\u3002" : "\u8BF7\u70B9\u51FB\u5237\u65B0\u91CD\u8BD5\u3002");
+        alert.textContent = "\u8FDE\u63A5\u5931\u8D25\uFF0C\u6682\u505C\u65B0\u7684\u89C2\u6D4B\u63D0\u793A\u3002";
+      } finally {
+        loading = false;
+        refresh.disabled = false;
+      }
+    }
+    select.onchange = render2;
+    group.onchange = render2;
+    refresh.onclick = load2;
+    load2();
+    setInterval(() => {
+      if (!document.hidden) load2();
+    }, 6e5);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) load2();
+    });
+  }
+
   // public/plan-data.js
   var stayDefaults = {
     "airbnb-tromso": { "address": "Garver Eidissens veg 15, Troms\xF8, Troms 9011, Norway", "checkin": "2027-01-01 15:00", "checkout": "2027-01-02 11:00 \u524D", "rooms": "8 \u4EBA\uFF1B\u623F\u95F4\u5B89\u6392\u5F85\u8865\u5145", "notes": "\u7528\u6237\u5DF2\u63D0\u4F9B\u5730\u5740\u30021 \u6708 2\u20134 \u65E5\u4F4F\u5BBF\u5C1A\u672A\u63D0\u4F9B\u3002", "transport": "\u673A\u573A\u4E58 24 \u8DEF\u5F80 Skjelnan via sentrum\uFF0C\u7EA6 20 \u5206\u949F\u81F3 Storskogen\uFF0C\u518D\u6B65\u884C\u7EA6 275 \u7C73\uFF0F4\u20135 \u5206\u949F\uFF1B1 \u6708 1 \u65E5\u53C2\u8003\uFF1A13:15\u219213:35\uFF08\u7EBD\u7EA6\u7EC4\uFF09\uFF0C16:15\u219216:35\uFF08\u4E0A\u6D77\u7EC4\uFF09\u3002\u5165\u5883\u63D0\u884C\u674E\u540E\u91CD\u65B0\u786E\u8BA4\u73ED\u6B21\uFF0C15:00 \u624D\u53EF\u5165\u4F4F\u3002", "busstop": "\u63A8\u8350 Storskogen\uFF08NSR:StopPlace:54464\uFF09\uFF0C\u6B65\u884C\u7EA6 265\u2013275 \u7C73\uFF0F4\u20135 \u5206\u949F\u3002\u4EE5 15A\uFF0F15B \u76F8\u90BB\u4F4D\u7F6E\u4F30\u7B97\uFF0C\u5165\u53E3\u5F85\u623F\u4E1C\u786E\u8BA4\u3002\u66F4\u8FD1\u7684 Storskogvegen\uFF08\u7EA6 137 \u7C73\uFF09\u672C\u6B21\u672A\u67E5\u5230\u51FA\u884C\u65E5\u671F\u73ED\u6B21\uFF0C\u6682\u4E0D\u63A8\u8350\u3002", "buslines": "\u53BB\u5E02\u4E2D\u5FC3\uFF1A24 \u8DEF Skjelnan via sentrum\uFF0C\u6216 20 \u8DEF Kroken via sentrum\uFF08\u7AD9\u53F0 92999\uFF09\uFF1B\u53CD\u5411\uFF1A24 \u8DEF Troms\xF8 lufthavn via Mortensnes\uFF0C20 \u8DEF Stakkevollan via UNN\uFF08\u7AD9\u53F0 92996\uFF09\u3002\u6838\u5BF9\u8F66\u5934\u65B9\u5411\u3002", "busdates": "Entur \u67E5\u8BE2\u4E8E 2026-11-02\uFF0CCET \u632A\u5A01\u5F53\u5730\u65F6\u95F4\u30021 \u6708 1 \u65E5\u53BB\u5E02\u4E2D\u5FC3\uFF1A24 \u8DEF 15:05\uFF0F15:35\uFF0F16:05\uFF0F16:35\uFF1B20 \u8DEF 15:22\uFF0F15:52\uFF0F16:22\uFF0F16:52\u30021 \u6708 2 \u65E5\u53BB\u5E02\u4E2D\u5FC3\uFF1A24 \u8DEF 09:05\uFF0F09:35\uFF0F10:05\uFF0F10:35\uFF1B20 \u8DEF 09:22\uFF0F09:52\uFF0F10:22\uFF0F10:53\u3002\u66F4\u591A\u65B9\u5411\u8BE6\u89C1\u4E0B\u65B9\u516C\u4EA4\u5361\u3002\u5F53\u524D\u8BA1\u5212\uFF0C\u51FA\u53D1\u524D\u590D\u67E5 entur.no\uFF0Fkart.svipper.no\u3002" },
@@ -67,7 +292,7 @@ window.NORWAY_API_BASE="https://norway-eight-winter-journey.wh1sper.chatgpt.site
       button2.textContent = "\u4FDD\u5B58\u5230\u56E2\u961F\u884C\u7A0B";
       const hint = document.createElement("p");
       hint.className = "note";
-      hint.textContent = stay ? "\u623F\u6E90\u786E\u8BA4\u540E\u586B\u5199\u3002\u8FD9\u91CC\u662F\u516C\u5F00\u7F51\u9875\uFF0C\u8BF7\u52FF\u5B58\u653E\u95E8\u7981\u5BC6\u7801\u548C\u4E2A\u4EBA\u8BC1\u4EF6\u3002" : "\u5929\u6C14\u9884\u62A5\u5C1A\u5F85\u66F4\u65B0\uFF1B\u4E34\u8FD1\u51FA\u884C\u65F6\u518D\u6838\u5BF9\u5F53\u5730\u9884\u62A5\u3002\u7A7F\u7740\u680F\u53EF\u586B\u5199\u6D3B\u52A8\u65B9\u5EFA\u8BAE\u53CA\u4E2A\u4EBA\u51C6\u5907\u3002";
+      hint.textContent = stay ? "\u623F\u6E90\u786E\u8BA4\u540E\u586B\u5199\u3002\u8FD9\u91CC\u662F\u516C\u5F00\u7F51\u9875\uFF0C\u8BF7\u52FF\u5B58\u653E\u95E8\u7981\u5BC6\u7801\u548C\u4E2A\u4EBA\u8BC1\u4EF6\u3002" : "\u4E0A\u65B9\u81EA\u52A8\u5929\u6C14\u4F9B\u53C2\u8003\uFF1B\u8FD9\u91CC\u53EF\u586B\u5199\u6D3B\u52A8\u65B9\u88C5\u5907\u8981\u6C42\u3001\u7A7F\u7740\u4E0E\u4E2A\u4EBA\u51C6\u5907\u3002";
       form.append(hint, button2, status);
       form.onsubmit = async (e) => {
         e.preventDefault();
@@ -526,4 +751,5 @@ window.NORWAY_API_BASE="https://norway-eight-winter-journey.wh1sper.chatgpt.site
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) load();
   });
+  setupWeather();
 })();

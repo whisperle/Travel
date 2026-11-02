@@ -1,3 +1,4 @@
+import {setupWeather} from "./weather.js";
 import {days} from './plan-data.js';
 import {setupPlans} from './plans.js';
 import {newRecordId} from './compat.js';
@@ -17,3 +18,5 @@ const money=makeMoney({request,getExpenses:()=>rows.filter(r=>r.kind==='expense'
 const plans=setupPlans({mutate});
 $('#add-form').onsubmit=async e=>{e.preventDefault();const text=$('#new-task').value.trim();if(text&&await mutate('records','POST',{id:newRecordId(),kind:'task',text,mode:$('#task-mode').value}))$('#new-task').value=''};$('#food-form').onsubmit=async e=>{e.preventDefault();const text=$('#food-name').value.trim();if(text&&await mutate('records','POST',{id:newRecordId(),kind:'food',text,qty:$('#food-qty').value.trim()})){$('#food-name').value='';$('#food-qty').value=''}};$('#expense-form').onsubmit=async e=>{e.preventDefault();const data={id:newRecordId(),kind:'expense',text:$('#expense-name').value.trim(),amount:$('#expense-amount').value,currency:$('#expense-currency').value,payer:$('#expense-payer').value,date:$('#expense-date').value};if(data.text&&await mutate('records','POST',data)){$('#expense-name').value='';$('#expense-amount').value=''}};$('#refresh').onclick=load;load();setInterval(()=>{if(!document.hidden&&!document.querySelector('form :focus'))load()},12000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
 
+
+setupWeather();

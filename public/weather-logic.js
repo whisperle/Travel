@@ -1,0 +1,17 @@
+export const SKY_POINTS=[
+{id:'tromso',name:'特罗姆瑟市区',group:'tromso',lat:69.6492,lon:18.9553},
+{id:'ersfjord',name:'Ersfjordbotn 区域',group:'tromso',lat:69.695,lon:18.631},
+{id:'sommaroy',name:'Sommarøy 区域',group:'tromso',lat:69.633,lon:17.996},
+{id:'eve',name:'EVE 机场区域',group:'eve',lat:68.491,lon:16.678},
+{id:'svolvaer',name:'Svolvær／Vågan',group:'lofoten',lat:68.234,lon:14.568},
+{id:'gimsoy',name:'Gimsøy 区域',group:'lofoten',lat:68.326,lon:14.089},
+{id:'haukland',name:'Haukland 区域',group:'lofoten',lat:68.199,lon:13.528},
+{id:'reine',name:'雷讷／Å 周边',group:'lofoten',lat:67.932,lon:13.089}];
+const skyDateFormatter=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Oslo',year:'numeric',month:'2-digit',day:'2-digit'});
+export function skyDate(seconds){return skyDateFormatter.format(new Date(seconds*1000))}
+const skyHourFormatter=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Oslo',hour:'2-digit',hourCycle:'h23'});
+export function skyHour(seconds){return Number(skyHourFormatter.format(new Date(seconds*1000)))}
+export function solarAltitude(seconds,lat,lon){const r=Math.PI/180,d=seconds/86400+2440587.5-2451545,g=(357.529+0.98560028*d)*r,L=(280.459+0.98564736*d)*r,lambda=L+(1.915*Math.sin(g)+0.02*Math.sin(2*g))*r,eps=(23.439-0.00000036*d)*r,ra=Math.atan2(Math.cos(eps)*Math.sin(lambda),Math.cos(lambda)),dec=Math.asin(Math.sin(eps)*Math.sin(lambda)),ha=(280.16+360.9856235*d+lon)*r-ra;return Math.asin(Math.sin(lat*r)*Math.sin(dec)+Math.cos(lat*r)*Math.cos(dec)*Math.cos(ha))/r}
+export function clothing(feels,wind=0,rain=0,waiting=false){if(!Number.isFinite(feels))return '暂无有效体感温度，无法生成穿搭建议。';let s=feels<=-10?'厚保暖内层＋抓绒／羊毛中层＋厚羽绒外套':feels<=0?'保暖内层＋抓绒中层＋保暖外套':feels<=10?'长袖内层＋抓绒／薄羽绒，可增减分层':'长袖与可脱卸外套';s+='；保暖帽、手套、羊毛袜和防滑防水鞋。';if(wind>=8)s+=' 风较大，外层选防风款，护住耳朵和颈部。';if(rain>0)s+=' 有降水，增加防水外层，准备备用干袜。';if(waiting)s+=' 夜间久站观测再加一层保暖，带热饮，安排回车内取暖。';return s+'仅作一般准备参考，海钓等活动以运营方装备要求为准。'}
+export function bestSkyWindow(point,nowSeconds){const h=point.hourly;if(!h?.time)return null;const date=skyDate(nowSeconds),hour=skyHour(nowSeconds),tomorrow=skyDate(Date.parse(date+'T12:00:00Z')/1000+86400);const candidates=h.time.map((t,i)=>({time:t,cloud:h.cloud_cover?.[i],wind:h.wind_speed_10m?.[i],rain:h.precipitation?.[i],feels:h.apparent_temperature?.[i]})).filter(x=>{if(x.time<nowSeconds||x.time>nowSeconds+86400)return false;const day=skyDate(x.time),hr=skyHour(x.time),tonight=hour<6?day===date&&hr<6:(day===date&&hr>=18)||(day===tomorrow&&hr<6);return x.time>=nowSeconds&&tonight&&solarAltitude(x.time,point.lat,point.lon)<-6&&Number.isFinite(x.cloud)&&Number.isFinite(x.rain)&&Number.isFinite(x.wind)});candidates.sort((a,b)=>(a.cloud+a.rain*30)-(b.cloud+b.rain*30)||a.time-b.time);return candidates[0]||null}
+export function auroraState(point,aurora,nowSeconds){const current=point.current,valid=Number.isFinite(aurora?.values?.[point.id])&&Number.isFinite(Date.parse(aurora.observationTime))&&Number.isFinite(Date.parse(aurora.forecastTime))&&Math.abs(nowSeconds-Date.parse(aurora.observationTime)/1000)<7200&&Math.abs(nowSeconds-Date.parse(aurora.forecastTime)/1000)<7200;const weatherFresh=current&&Number.isFinite(current.time)&&Math.abs(nowSeconds-current.time)<7200;if(!valid||!weatherFresh)return '数据不足或已过期，暂不判断';if(solarAltitude(nowSeconds,point.lat,point.lon)>=-6)return '现在天色仍亮，等待更暗时段';if(!Number.isFinite(current.cloud_cover)||!Number.isFinite(current.precipitation))return '云量／降水数据不足';if(current.cloud_cover>60||current.precipitation>0.2)return '目前云／降水遮挡较多';if(aurora.values[point.id]>=10)return '现在可留意天空（仍不保证可见）';return '当前模型信号偏低，继续观察'}
