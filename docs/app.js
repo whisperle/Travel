@@ -490,7 +490,7 @@ window.NORWAY_API_BASE="https://norway-eight-winter-journey.wh1sper.chatgpt.site
       card.append(head, line);
       $2("#foods").append(card);
     }
-    if (!foods.length) $2("#foods").append(el2("div", "\u8FD8\u6CA1\u6709\u98DF\u6750\u3002\u628A\u60F3\u5E26\u7684\u4E1C\u897F\u52A0\u8FDB\u6765\uFF0C\u518D\u7531\u5927\u5BB6\u8BA4\u9886\u3002", "empty"));
+    if (!foods.length) $2("#foods").append(el2("div", "\u8FD8\u6CA1\u6709\u7269\u8D44\u3002\u628A\u98DF\u6750\u3001\u65E5\u7528\u54C1\u6216\u5176\u4ED6\u8981\u5E26\u7684\u4E1C\u897F\u52A0\u8FDB\u6765\uFF0C\u518D\u7531\u5927\u5BB6\u8BA4\u9886\u3002", "empty"));
     $2("#food-progress").textContent = foods.filter((r) => r.completed).length + " / " + foods.length + " \u5DF2\u5E26\u597D";
     money.render(expenses, actor, remove);
     plans.update(rows);
